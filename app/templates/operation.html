@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>📝 工作台</h2>
+    <div class="header-actions">
+        <label class="toggle-label">
+            <input type="checkbox" id="autoSubmit" {% if auto_submit %}checked{% endif %}>
+            <span class="toggle-switch"></span>
+            自动提交
+        </label>
+    </div>
+</div>
+
+<div class="operation-layout">
+    <div class="fields-panel">
+        <div class="card">
+            <div class="card-header">
+                <h3>日报内容</h3>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="saveAllFields()">💾 保存</button>
+                    <button class="btn btn-outline btn-sm" onclick="clearAllFields()">🗑️ 清空</button>
+                </div>
+            </div>
+            <div class="card-body fields-container">
+                {% for label in field_labels %}
+                <div class="field-item">
+                    <label class="field-label">{{ label }}</label>
+                    <textarea class="field-input" data-label="{{ label }}" rows="3"
+                              placeholder="请输入内容...">{{ fields.get(label, '') }}</textarea>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <div class="card">
+            <div class="card-header">
+                <h3>🤖 AI 智能生成</h3>
+            </div>
+            <div class="card-body">
+                <p class="hint">输入第一项「努力」的内容，AI 将自动补全其余字段</p>
+                <textarea id="aiInput" rows="3" placeholder="例如：今天完成了XX项目的需求评审...">{{ fields.get(field_labels[0], '') }}</textarea>
+                <button class="btn btn-primary btn-block" onclick="generateAI()" id="aiBtn" style="margin-top:10px">✨ AI 生成</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🚀 执行操作</h3>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-success btn-block btn-lg" onclick="runReport()" id="runBtn">
+                    ▶ 开始填写日报
+                </button>
+            </div>
+        </div>
+
+        <div class="card log-card">
+            <div class="card-header">
+                <h3>📋 运行日志</h3>
+                <button class="btn btn-outline btn-sm" onclick="clearLogs()">清空</button>
+            </div>
+            <div class="card-body">
+                <div class="log-container" id="logContainer">
+                    <div class="log-empty">暂无日志，点击「开始填写日报」启动</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const fieldLabels = {{ field_labels | tojson }};
+</script>
+{% endblock %}

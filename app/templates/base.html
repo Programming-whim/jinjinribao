@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精进日报自动填写工具</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+<div class="app-container">
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="logo">
+            <span>精进日报工具</span>
+        </div>
+        <ul class="nav-list">
+            <li><a href="{{ url_for('main.operation_page') }}" class="nav-item {% if request.endpoint == 'main.operation_page' %}active{% endif %}">
+                <span class="nav-icon">📝</span><span>工作台</span>
+            </a></li>
+            <li><a href="{{ url_for('main.config_page') }}" class="nav-item {% if request.endpoint == 'main.config_page' %}active{% endif %}">
+                <span class="nav-icon">⚙️</span><span>配置管理</span>
+            </a></li>
+            <li><a href="{{ url_for('main.schedule_page') }}" class="nav-item {% if request.endpoint == 'main.schedule_page' %}active{% endif %}">
+                <span class="nav-icon">⏰</span><span>定时任务</span>
+            </a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <span class="user-info">👤 {{ username | default('未登录') }}</span>
+            <a href="{{ url_for('main.logout') }}" class="logout-btn">退出登录</a>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

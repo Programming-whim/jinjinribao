@@ -1,0 +1,98 @@
+"""常量定义：URL、字段标签、默认值、定时器参数等"""
+
+LOGIN_URL = "https://ssc.homedo.com/login"
+LOGIN_BUTTON_TEXT = "立即登录"
+DAILY_REPORT_NAV_TEXT = "精进日报"
+WRITE_REPORT_BUTTON_TEXT = "去写日报"
+SUBMIT_BUTTON_TEXTS = ["提交", "保存"]
+
+DEFAULT_USERNAME = "15797813736"
+DEFAULT_PASSWORD = "Yang15797813736"
+
+FIELD_LABELS = [
+    "一、付出不亚于任何人的努力，谁比你更努力",
+    "二、以终为始，每天完成六件主航道的事",
+    "三、民主生活会改善",
+    "四、需兄弟部门配合与知晓项",
+    "五、明日计划工作项",
+    "六、每天反省二点，并告知伙伴与家人",
+    "七、不受干扰，杜绝感性烦恼，争取每天快乐",
+    "八、纯粹助人，争取每天做三件利他的事情",
+]
+
+DEFAULT_FIELD_CONTENT = {
+    label: "" for label in FIELD_LABELS
+}
+
+DEFAULT_SCHEDULE_TIME = "18:00"
+DEFAULT_SCHEDULE_ENABLED = False
+
+SCHEDULE_POLL_INTERVAL_MS = 10_000
+
+DEFAULT_HEADLESS = False
+DEFAULT_STEP_DELAY = 1.0
+
+DEFAULT_AUTO_SUBMIT = False
+
+PAGE_LOAD_TIMEOUT = 30000
+LOGIN_TIMEOUT = 20000
+NAV_TIMEOUT = 15000
+
+APP_TITLE = "精进日报自动填写工具"
+APP_WIDTH = 1100
+APP_HEIGHT = 780
+
+# ========== 字节风格色板 ==========
+# 品牌绿
+TD_BRAND = "#16A34A"
+TD_BRAND_HOVER = "#15803D"
+TD_BRAND_ACTIVE = "#166534"
+TD_BRAND_LIGHT = "#DCFCE7"
+TD_BRAND_FOCUS = "#86EFAC"
+TD_BRAND_SUBTLE = "#F0FDF4"
+
+# 功能色
+TD_SUCCESS = "#16A34A"
+TD_SUCCESS_LIGHT = "#F0FDF4"
+TD_WARNING = "#F59E0B"
+TD_WARNING_LIGHT = "#FFFBEB"
+TD_ERROR = "#EF4444"
+TD_ERROR_LIGHT = "#FEF2F2"
+
+# 文字
+TD_TEXT_PRIMARY = "#1A1A2E"
+TD_TEXT_SECONDARY = "#6B7280"
+TD_TEXT_PLACEHOLDER = "#9CA3AF"
+TD_TEXT_DISABLED = "#D1D5DB"
+
+# 背景
+TD_BG_PAGE = "#F5F6F8"
+TD_BG_CONTAINER = "#FFFFFF"
+TD_BG_COMPONENT = "#F9FAFB"
+TD_BG_HOVER = "#F3F4F6"
+
+# 边框
+TD_BORDER_LEVEL1 = "#E5E7EB"
+TD_BORDER_LEVEL2 = "#F0F0F0"
+TD_BORDER_LEVEL3 = "#F5F5F5"
+
+# 卡片阴影（用边框模拟）
+TD_SHADOW = "#D1D5DB"
+
+# 侧边栏
+TD_SIDEBAR_BG = "#FAFAFA"
+TD_SIDEBAR_ACTIVE_BG = "#F0FDF4"
+TD_SIDEBAR_ACTIVE_TEXT = "#16A34A"
+TD_SIDEBAR_TEXT = "#6B7280"
+TD_SIDEBAR_HOVER = "#F3F4F6"
+SIDEBAR_WIDTH = 200
+
+# ========== 更新检查配置 ==========
+APP_VERSION = "1.0.0"
+UPDATE_EXE_DOWNLOAD_URL = "https://hmd-mall-product.homedo.com/homedo-oss/static/1780304504043/精进日报工具.exe"
+
+# ========== AI 生成配置 ==========
+DEFAULT_AI_API_KEY = "sk-45260d030d354db39c975a9ce0441ab9"
+DEFAULT_AI_API_URL = "https://api.deepseek.com/v1"
+DEFAULT_AI_MODEL = "deepseek-chat"
+DEFAULT_AI_ROLE = ""

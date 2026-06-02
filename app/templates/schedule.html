@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>⏰ 定时任务</h2>
+</div>
+
+<div class="config-layout">
+    <div class="card">
+        <div class="card-header"><h3>定时填写日报</h3></div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="toggle-label">
+                    <input type="checkbox" id="schedEnabled" {% if schedule.enabled %}checked{% endif %}>
+                    <span class="toggle-switch"></span>
+                    启用定时任务
+                </label>
+            </div>
+            <div class="form-group">
+                <label>执行时间</label>
+                <input type="time" id="schedTime" value="{{ schedule.time }}">
+            </div>
+            <p class="hint">开启后，系统将在每天指定时间自动执行日报填写（需保持程序运行）</p>
+        </div>
+    </div>
+
+    <div class="save-bar">
+        <button class="btn btn-primary btn-lg" onclick="saveSchedule()">💾 保存</button>
+    </div>
+</div>
+{% endblock %}

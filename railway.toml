@@ -1,0 +1,9 @@
+[build]
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python main.py"
+healthcheckPath = "/"
+healthcheckTimeout = 120
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
