@@ -196,6 +196,13 @@ def run_report():
 
     socketio = get_socketio()
 
+    # 本地模式：显示浏览器窗口；服务器模式：无头运行
+    is_server = bool(os.environ.get("PORT"))
+    headless = is_server
+
+    # CDP URL: 连接现有 Chrome 开新标签页
+    cdp_url = os.environ.get("CDP_URL", "")
+
     def status_callback(msg, level="info"):
         socketio.emit("log", {
             "msg": msg, "level": level,
@@ -209,8 +216,9 @@ def run_report():
                 account=(username, password),
                 status_callback=status_callback,
                 step_delay=browser.get("step_delay", 1.0),
-                headless=True,
+                headless=headless,
                 auto_submit=auto_submit,
+                cdp_url=cdp_url if cdp_url else None,
             )
             engine.run()
         except Exception as e:

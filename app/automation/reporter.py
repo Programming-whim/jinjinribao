@@ -20,15 +20,18 @@ from app.automation import selectors
 
 class DailyReportEngine:
     def __init__(self, field_contents, account, status_callback=None,
-                 step_delay=1.0, headless=False, auto_submit=False):
+                 step_delay=1.0, headless=False, auto_submit=False,
+                 cdp_url=None):
         self._fields = field_contents
         self._username, self._password = account
         self._cb = status_callback or (lambda m, l: None)
         self._delay = step_delay
         self._headless = headless
         self._auto_submit = auto_submit
+        self._cdp_url = cdp_url  # CDP 连接地址，有值则连接现有浏览器
         self._pw = None
         self._browser = None
+        self._context = None  # CDP 模式下的浏览器上下文
 
     def _log(self, msg, level="info"):
         self._cb(msg, level)
@@ -282,39 +285,109 @@ class DailyReportEngine:
         try:
             self._log("正在启动浏览器...")
             self._pw = sync_playwright().start()
-            # Docker/服务器环境需要 --no-sandbox
-            launch_args = ['--no-sandbox', '--disable-dev-shm-usage']
-            # 优先 Chrome，降级到 Edge，再降级到 Playwright 自带 Chromium
-            try:
-                self._browser = self._pw.chromium.launch(
-                    channel="chrome", headless=self._headless,
-                    args=launch_args,
-                )
-                self._log("Chrome 浏览器已启动")
-            except Exception:
-                self._log("未检测到 Chrome，尝试启动 Edge...")
+            page = None
+
+            # ========== CDP 模式：连接现有 Chrome，开新标签页 ==========
+            if self._cdp_url:
                 try:
-                    self._browser = self._pw.chromium.launch(
-                        channel="msedge", headless=self._headless,
-                        args=launch_args,
-                    )
-                    self._log("Edge 浏览器已启动")
-                except Exception:
-                    self._log("未检测到 Edge，使用内置 Chromium...")
+                    self._log(f"通过 CDP 连接浏览器: {self._cdp_url}")
+                    self._browser = self._pw.chromium.connect_over_cdp(self._cdp_url)
+                    # 获取默认上下文（就是用户正在用的 Chrome）
+                    contexts = self._browser.contexts
+                    if contexts:
+                        self._context = contexts[0]
+                    else:
+                        self._context = self._browser.new_context()
+                    # 在现有浏览器中新开一个标签页
+                    page = self._context.new_page()
+                    page.bring_to_front()
+                    self._log("✅ 已在当前 Chrome 中打开新标签页")
+                except Exception as e:
+                    self._log(f"CDP 连接失败: {e}，回退到普通模式", "error")
+                    self._cdp_url = None
+
+            # ========== 普通模式：启动新浏览器实例 ==========
+            if page is None:
+                import platform
+                is_linux = platform.system() == "Linux"
+                launch_args = ['--no-sandbox', '--disable-dev-shm-usage'] if is_linux else []
+
+                chrome_paths = []
+                if platform.system() == "Windows":
+                    import os as _os
+                    for p in [
+                        _os.path.join(_os.environ.get("PROGRAMFILES", ""), "Google\\Chrome\\Application\\chrome.exe"),
+                        _os.path.join(_os.environ.get("PROGRAMFILES(X86)", ""), "Google\\Chrome\\Application\\chrome.exe"),
+                        _os.path.join(_os.environ.get("LOCALAPPDATA", ""), "Google\\Chrome\\Application\\chrome.exe"),
+                    ]:
+                        if p and _os.path.isfile(p):
+                            chrome_paths.append(p)
+
+                browser = None
+                error_msgs = []
+
+                for chrome_path in chrome_paths:
                     try:
-                        self._browser = self._pw.chromium.launch(
+                        self._log(f"尝试启动 Chrome: {chrome_path}")
+                        browser = self._pw.chromium.launch(
+                            executable_path=chrome_path,
                             headless=self._headless,
                             args=launch_args,
                         )
+                        self._log("Chrome 浏览器已启动")
+                        break
+                    except Exception as e:
+                        error_msgs.append(str(e))
+
+                if browser is None:
+                    try:
+                        browser = self._pw.chromium.launch(
+                            channel="chrome", headless=self._headless,
+                            args=launch_args,
+                        )
+                        self._log("Chrome 浏览器已启动")
+                    except Exception:
+                        pass
+
+                if browser is None:
+                    try:
+                        self._log("Chrome 未找到，尝试启动 Edge...")
+                        browser = self._pw.chromium.launch(
+                            channel="msedge", headless=self._headless,
+                            args=launch_args,
+                        )
+                        self._log("Edge 浏览器已启动")
+                    except Exception:
+                        pass
+
+                if browser is None:
+                    try:
+                        browser = self._pw.chromium.launch(
+                            headless=self._headless, args=launch_args,
+                        )
                         self._log("Chromium 浏览器已启动")
                     except Exception as e:
-                        raise RuntimeError(f"无法启动任何浏览器: {e}")
-            page = self._browser.new_page()
+                        error_msgs.append(str(e))
+                        raise RuntimeError("无法启动任何浏览器:\n" + "\n".join(error_msgs))
+
+                self._browser = browser
+
+                if not self._headless:
+                    try:
+                        ctx = self._browser.new_context(viewport={"width": 1280, "height": 800})
+                        page = ctx.new_page()
+                        page.bring_to_front()
+                    except Exception:
+                        page = self._browser.new_page()
+                else:
+                    page = self._browser.new_page()
+
             page.on("dialog", lambda d: d.accept())
 
             # 1. 打开登录页
             self._log("正在打开登录页面...")
             page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT)
+            page.bring_to_front()
             page.wait_for_load_state("networkidle", timeout=PAGE_LOAD_TIMEOUT)
             self._wait(3)
             self._log("已打开登录页面")

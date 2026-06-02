@@ -2,16 +2,61 @@
 
 import os
 import sys
+import platform
 import webbrowser
 import threading
+import subprocess
+import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
+CDP_PORT = 9222  # Chrome DevTools Protocol 调试端口
 
 
-def run_web():
+def _find_chrome():
+    """查找 Chrome 可执行文件路径"""
+    if platform.system() == "Windows":
+        candidates = [
+            os.path.join(os.environ.get("PROGRAMFILES", ""), "Google\\Chrome\\Application\\chrome.exe"),
+            os.path.join(os.environ.get("PROGRAMFILES(X86)", ""), "Google\\Chrome\\Application\\chrome.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Google\\Chrome\\Application\\chrome.exe"),
+        ]
+    elif platform.system() == "Darwin":
+        candidates = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+    else:
+        candidates = ["google-chrome", "chromium-browser", "chromium"]
+    for p in candidates:
+        if p and (os.path.isfile(p) or os.path.islink(p)):
+            return p
+    return None
+
+
+def _launch_chrome_cdp(flask_port):
+    """以远程调试模式启动 Chrome，返回 CDP URL"""
+    chrome = _find_chrome()
+    if not chrome:
+        return None
+    user_data = os.path.join(tempfile.gettempdir(), "jinjinribao-cdp-profile")
+    cmd = [
+        chrome,
+        f"--remote-debugging-port={CDP_PORT}",
+        f"--user-data-dir={user_data}",
+        "--no-first-run",
+        "--no-default-browser-check",
+        f"http://127.0.0.1:{flask_port}",
+    ]
+    try:
+        subprocess.Popen(cmd)
+        time.sleep(2)  # 等待 Chrome 启动
+        return f"http://127.0.0.1:{CDP_PORT}"
+    except Exception:
+        return None
+
+
+def run_web(port_override=None):
     """Web 模式：启动 Flask 服务，本地自动打开浏览器，服务器模式监听 PORT"""
     from flask import Flask
     from flask_socketio import SocketIO
@@ -20,7 +65,7 @@ def run_web():
 
     # 服务器模式：Railway 注入 PORT 环境变量
     is_server = bool(os.environ.get("PORT"))
-    port = int(os.environ.get("PORT", 5678))
+    port = port_override or int(os.environ.get("PORT", 5678))
     host = "0.0.0.0" if is_server else "127.0.0.1"
 
     app = Flask(
@@ -55,10 +100,20 @@ def run_web():
     app.config["SCHEDULER"] = scheduler
     scheduler.start()
 
-    # 本地模式自动打开浏览器，服务器模式不打开
+    # 本地模式：以 CDP 模式启动 Chrome，让用户在同一个浏览器里操作
+    cdp_url = None
     if not is_server:
-        url = f"http://127.0.0.1:{port}"
-        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+        cdp_url = _launch_chrome_cdp(port)
+        if cdp_url:
+            os.environ["CDP_URL"] = cdp_url
+            print(f"  Chrome 已以调试模式启动 (CDP: {cdp_url})")
+        else:
+            # 回退：普通方式打开浏览器
+            url = f"http://127.0.0.1:{port}"
+            threading.Thread(target=lambda: (time.sleep(2), os.startfile(url) if platform.system() == "Windows" else webbrowser.open(url)), daemon=True).start()
+
+    # 把 CDP URL 存入 Flask 配置，供路由使用
+    app.config["CDP_URL"] = cdp_url
 
     print(f"\n{'='*50}")
     if is_server:
