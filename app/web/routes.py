@@ -127,6 +127,13 @@ def save_config():
             ai.get("model", ""),
             ai.get("prompt_template", ""),
         )
+    if "browser" in data:
+        browser = data["browser"]
+        cfg._data["browser"] = {
+            "headless": True,
+            "step_delay": browser.get("step_delay", 1.0),
+        }
+        cfg.save()
     return jsonify({"ok": True})
 
 

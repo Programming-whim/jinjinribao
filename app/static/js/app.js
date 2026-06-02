@@ -1,12 +1,12 @@
 // ===== SocketIO 实时日志 =====
-const socket = io();
-const logContainer = document.getElementById('logContainer');
+var socket = io();
+var logContainer = document.getElementById('logContainer');
 
 socket.on('log', function(data) {
     if (!logContainer) return;
-    const empty = logContainer.querySelector('.log-empty');
+    var empty = logContainer.querySelector('.log-empty');
     if (empty) empty.remove();
-    const line = document.createElement('div');
+    var line = document.createElement('div');
     line.className = 'log-line ' + (data.level || 'info');
     line.innerHTML = '<span class="log-time">' + (data.time || '') + '</span>' + escapeHtml(data.msg);
     logContainer.appendChild(line);
@@ -14,13 +14,14 @@ socket.on('log', function(data) {
 });
 
 function escapeHtml(text) {
-    const d = document.createElement('div');
+    var d = document.createElement('div');
     d.textContent = text;
     return d.innerHTML;
 }
 
 function clearLogs() {
-    if (logContainer) logContainer.innerHTML = '<div class="log-empty">日志已清空</div>';
+    var el = document.getElementById('logContainer');
+    if (el) el.innerHTML = '<div class="log-empty">日志已清空</div>';
 }
 
 // ===== 保存所有字段 =====
@@ -121,6 +122,9 @@ function saveConfig() {
             api_url: document.getElementById('cfgApiUrl').value,
             model: document.getElementById('cfgModel').value,
             prompt_template: document.getElementById('cfgRole').value
+        },
+        browser: {
+            step_delay: parseFloat(document.getElementById('cfgStepDelay').value) || 1.0
         }
     };
     fetch('/api/save_config', {
