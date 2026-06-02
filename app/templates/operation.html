@@ -4,68 +4,83 @@
     <h2>📝 工作台</h2>
     <div class="header-actions">
         <label class="toggle-label">
-            <input type="checkbox" id="autoSubmit" {% if auto_submit %}checked{% endif %}>
+            <input type="checkbox" id="autoSubmit" {% if auto_submit %}checked{% endif %} onchange="toggleAutoSubmit()">
             <span class="toggle-switch"></span>
             自动提交
         </label>
     </div>
 </div>
 
-<div class="operation-layout">
-    <div class="fields-panel">
-        <div class="card">
-            <div class="card-header">
-                <h3>日报内容</h3>
-                <div class="card-actions">
-                    <button class="btn btn-outline btn-sm" onclick="saveAllFields()">💾 保存</button>
-                    <button class="btn btn-outline btn-sm" onclick="clearAllFields()">🗑️ 清空</button>
-                </div>
+<!-- 操作按钮行 -->
+<div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="display:flex;gap:12px;align-items:center">
+        <button class="btn btn-warning btn-lg" onclick="generateAI()" id="aiBtn" style="flex:1">✨ AI 智能生成</button>
+        <button class="btn btn-success btn-lg" onclick="runReport()" id="runBtn" style="flex:1">🚀 一键填写日报</button>
+    </div>
+</div>
+
+<!-- 第一项 + 职位描述 并排 -->
+<div class="input-row">
+    <div class="card input-card">
+        <div class="card-body">
+            <div class="input-card-header">
+                <span class="num-badge">1</span>
+                <span class="input-card-title">{{ field_labels[0] }}</span>
+                <span class="saved-hint" id="field1Saved" style="display:none">● 已保存</span>
             </div>
-            <div class="card-body fields-container">
-                {% for label in field_labels %}
-                <div class="field-item">
-                    <label class="field-label">{{ label }}</label>
-                    <textarea class="field-input" data-label="{{ label }}" rows="3"
-                              placeholder="请输入内容...">{{ fields.get(label, '') }}</textarea>
-                </div>
-                {% endfor %}
-            </div>
+            <p class="input-card-desc">这是你的每日努力基准，填写后自动记住，下次无需重复输入</p>
+            <input type="text" id="field1Input" class="field1-input"
+                   value="{{ fields.get(field_labels[0], '') }}"
+                   placeholder="请输入今天的努力内容..."
+                   oninput="onField1Change()">
         </div>
     </div>
-
-    <div class="side-panel">
-        <div class="card">
-            <div class="card-header">
-                <h3>🤖 AI 智能生成</h3>
+    <div class="card input-card">
+        <div class="card-body">
+            <div class="input-card-header">
+                <span class="input-card-title">职位描述</span>
+                <span class="saved-hint" id="roleSaved" style="display:none">● 已保存</span>
             </div>
-            <div class="card-body">
-                <p class="hint">输入第一项「努力」的内容，AI 将自动补全其余字段</p>
-                <textarea id="aiInput" rows="3" placeholder="例如：今天完成了XX项目的需求评审...">{{ fields.get(field_labels[0], '') }}</textarea>
-                <button class="btn btn-primary btn-block" onclick="generateAI()" id="aiBtn" style="margin-top:10px">✨ AI 生成</button>
-            </div>
+            <p class="input-card-desc">AI 会根据你的职位描述生成日报内容，填写后自动记住</p>
+            <textarea id="roleInput" class="role-input" rows="3"
+                      placeholder="请输入你的职位&#10;例：我是一名软件工程师，负责后端开发和系统架构设计"
+                      oninput="onRoleChange()">{{ ai_settings.prompt_template }}</textarea>
         </div>
+    </div>
+</div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>🚀 执行操作</h3>
+<!-- 日报内容预览 -->
+<div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+        <h3>日报内容预览</h3>
+        <button class="btn btn-outline btn-sm" onclick="location.href='/config'">编辑配置</button>
+    </div>
+    <div class="card-body">
+        <div id="previewContainer">
+            {% for label in field_labels[1:] %}
+            <div class="preview-row">
+                <span class="num-badge-sm">{{ loop.index + 1 }}</span>
+                <span class="preview-label">{{ label[:12] }}{% if label|length > 12 %}…{% endif %}</span>
+                <span class="preview-content" id="preview-{{ loop.index }}">
+                    {% set content = fields.get(label, '') %}
+                    {% if content %}{{ content[:40] }}{% if content|length > 40 %}…{% endif %}{% else %}<span class="preview-empty">未填写</span>{% endif %}
+                </span>
             </div>
-            <div class="card-body">
-                <button class="btn btn-success btn-block btn-lg" onclick="runReport()" id="runBtn">
-                    ▶ 开始填写日报
-                </button>
-            </div>
+            {% endfor %}
         </div>
+        <p class="hint" id="emptyHint" style="text-align:center;margin-top:8px">暂无内容，点击「AI 智能生成」自动填写</p>
+    </div>
+</div>
 
-        <div class="card log-card">
-            <div class="card-header">
-                <h3>📋 运行日志</h3>
-                <button class="btn btn-outline btn-sm" onclick="clearLogs()">清空</button>
-            </div>
-            <div class="card-body">
-                <div class="log-container" id="logContainer">
-                    <div class="log-empty">暂无日志，点击「开始填写日报」启动</div>
-                </div>
-            </div>
+<!-- 运行日志 -->
+<div class="card log-card">
+    <div class="card-header">
+        <h3>📋 运行日志</h3>
+        <button class="btn btn-outline btn-sm" onclick="clearLogs()">清空</button>
+    </div>
+    <div class="card-body">
+        <div class="log-container" id="logContainer">
+            <div class="log-empty">暂无日志，点击「一键填写日报」启动</div>
         </div>
     </div>
 </div>
@@ -74,5 +89,99 @@
 {% block scripts %}
 <script>
     const fieldLabels = {{ field_labels | tojson }};
+    const field1Label = fieldLabels[0];
+
+    // ===== 初始化已保存提示 =====
+    (function() {
+        var f1 = document.getElementById('field1Input');
+        if (f1.value && f1.value.trim()) document.getElementById('field1Saved').style.display = '';
+        var role = document.getElementById('roleInput');
+        if (role.value && role.value.trim()) document.getElementById('roleSaved').style.display = '';
+        // 隐藏空提示
+        checkPreviewEmpty();
+    })();
+
+    // ===== Field1 自动保存 =====
+    var field1Timer = null;
+    function onField1Change() {
+        var val = document.getElementById('field1Input').value.trim();
+        if (val) {
+            document.getElementById('field1Saved').style.display = '';
+        } else {
+            document.getElementById('field1Saved').style.display = 'none';
+        }
+        // 防抖保存
+        clearTimeout(field1Timer);
+        field1Timer = setTimeout(function() {
+            var fields = {};
+            fields[field1Label] = val;
+            fetch('/api/save_fields', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({fields: fields})
+            });
+        }, 500);
+    }
+
+    // ===== 职位描述自动保存 =====
+    var roleTimer = null;
+    function onRoleChange() {
+        var val = document.getElementById('roleInput').value.trim();
+        if (val) {
+            document.getElementById('roleSaved').style.display = '';
+        } else {
+            document.getElementById('roleSaved').style.display = 'none';
+        }
+        clearTimeout(roleTimer);
+        roleTimer = setTimeout(function() {
+            fetch('/api/save_config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ai: {
+                        api_key: '', api_url: '', model: '',
+                        prompt_template: val
+                    }
+                })
+            });
+        }, 500);
+    }
+
+    // ===== 自动提交开关 =====
+    function toggleAutoSubmit() {
+        var val = document.getElementById('autoSubmit').checked;
+        fetch('/api/save_config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({auto_submit: val})
+        });
+    }
+
+    // ===== 预览刷新 =====
+    function checkPreviewEmpty() {
+        var allEmpty = true;
+        document.querySelectorAll('.preview-content').forEach(function(el) {
+            if (!el.querySelector('.preview-empty')) allEmpty = false;
+        });
+        var hint = document.getElementById('emptyHint');
+        if (hint) hint.style.display = allEmpty ? '' : 'none';
+    }
+
+    function refreshPreview(fields) {
+        for (var i = 0; i < fieldLabels.length - 1; i++) {
+            var label = fieldLabels[i + 1];
+            var el = document.getElementById('preview-' + (i + 1));
+            if (!el) continue;
+            var content = fields[label] || '';
+            if (content.trim()) {
+                var short = content.trim().substring(0, 40);
+                if (content.trim().length > 40) short += '…';
+                el.textContent = short;
+            } else {
+                el.innerHTML = '<span class="preview-empty">未填写</span>';
+            }
+        }
+        checkPreviewEmpty();
+    }
 </script>
 {% endblock %}

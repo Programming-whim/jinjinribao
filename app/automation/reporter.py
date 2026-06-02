@@ -282,10 +282,13 @@ class DailyReportEngine:
         try:
             self._log("正在启动浏览器...")
             self._pw = sync_playwright().start()
+            # Docker/服务器环境需要 --no-sandbox
+            launch_args = ['--no-sandbox', '--disable-dev-shm-usage']
             # 优先 Chrome，降级到 Edge，再降级到 Playwright 自带 Chromium
             try:
                 self._browser = self._pw.chromium.launch(
                     channel="chrome", headless=self._headless,
+                    args=launch_args,
                 )
                 self._log("Chrome 浏览器已启动")
             except Exception:
@@ -293,6 +296,7 @@ class DailyReportEngine:
                 try:
                     self._browser = self._pw.chromium.launch(
                         channel="msedge", headless=self._headless,
+                        args=launch_args,
                     )
                     self._log("Edge 浏览器已启动")
                 except Exception:
@@ -300,10 +304,11 @@ class DailyReportEngine:
                     try:
                         self._browser = self._pw.chromium.launch(
                             headless=self._headless,
+                            args=launch_args,
                         )
                         self._log("Chromium 浏览器已启动")
-                    except Exception:
-                        raise RuntimeError("无法启动任何浏览器，请安装 Chrome/Edge 或运行 playwright install chromium")
+                    except Exception as e:
+                        raise RuntimeError(f"无法启动任何浏览器: {e}")
             page = self._browser.new_page()
             page.on("dialog", lambda d: d.accept())
 

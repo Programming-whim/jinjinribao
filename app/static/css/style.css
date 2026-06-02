@@ -195,4 +195,78 @@ body {
     .nav-item { justify-content: center; padding: 12px; }
     .main-content { margin-left: 64px; padding: 16px; }
     .operation-layout { grid-template-columns: 1fr; }
+    .input-row { grid-template-columns: 1fr; }
 }
+
+/* ===== 工作台：第一项 + 职位描述并排 ===== */
+.input-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 16px;
+}
+.input-card-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.input-card-title {
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.input-card-desc {
+    font-size: 11px; color: var(--text-placeholder); margin-bottom: 8px;
+}
+.num-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 4px;
+    background: var(--brand-light); color: var(--brand);
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.num-badge-sm {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 4px;
+    background: var(--brand-light); color: var(--brand);
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.saved-hint {
+    font-size: 11px; color: var(--brand); white-space: nowrap;
+}
+.field1-input {
+    width: 100%; padding: 10px 12px; height: 40px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; transition: border-color .2s;
+}
+.field1-input:focus {
+    outline: none; border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+.role-input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; resize: vertical; font-family: inherit;
+    transition: border-color .2s;
+}
+.role-input:focus {
+    outline: none; border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+
+/* ===== 日报预览行 ===== */
+.preview-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0;
+}
+.preview-row + .preview-row { border-top: 1px solid #F5F5F5; }
+.preview-label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    flex: 1; min-width: 0;
+}
+.preview-content {
+    font-size: 12px; color: var(--text-primary);
+    text-align: right; max-width: 280px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.preview-empty { color: var(--text-placeholder); }
+
+/* ===== AI/执行按钮颜色 ===== */
+.btn-warning {
+    background: #F59E0B; color: #fff; font-size: 15px; font-weight: 600;
+}
+.btn-warning:hover { background: #D97706; }

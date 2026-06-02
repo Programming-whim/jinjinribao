@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# 安装 Chromium 及 Playwright 依赖
+# 安装 Playwright 及 Chromium 所需系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget gnupg ca-certificates \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
@@ -13,8 +13,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 安装 Playwright 自带的 Chromium（不依赖系统 Chrome）
-RUN playwright install chromium
+# 安装 Playwright 自带的 Chromium 及系统依赖（关键！）
+RUN playwright install --with-deps chromium
 
 COPY . .
 

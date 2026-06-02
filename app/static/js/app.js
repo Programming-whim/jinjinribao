@@ -47,8 +47,9 @@ function clearAllFields() {
 
 // ===== AI 生成 =====
 function generateAI() {
-    var input = document.getElementById('aiInput');
+    var input = document.getElementById('field1Input');
     var btn = document.getElementById('aiBtn');
+    if (!input) return;
     var content = input.value.trim();
     if (!content) { alert('请先输入第一项工作内容'); return; }
 
@@ -63,14 +64,15 @@ function generateAI() {
     .then(function(r) { return r.json(); })
     .then(function(d) {
         if (d.ok) {
-            var fields = d.fields;
-            document.querySelectorAll('.field-input').forEach(function(el) {
-                var label = el.dataset.label;
-                if (fields[label]) el.value = fields[label];
+            // 保存 AI 返回的所有字段
+            fetch('/api/save_fields', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({fields: d.fields})
+            }).then(function() {
+                // 刷新预览
+                if (typeof refreshPreview === 'function') refreshPreview(d.fields);
             });
-            // 同步第一个字段到 AI 输入框
-            var firstField = document.querySelector('.field-input');
-            if (firstField) firstField.value = content;
             showToast('AI 生成完成！');
         } else {
             alert('AI 生成失败: ' + (d.error || '未知错误'));
@@ -79,14 +81,13 @@ function generateAI() {
     .catch(function(e) { alert('请求失败: ' + e); })
     .finally(function() {
         btn.disabled = false;
-        btn.textContent = '✨ AI 生成';
+        btn.textContent = '✨ AI 智能生成';
     });
 }
 
 // ===== 执行日报填写 =====
 function runReport() {
     var btn = document.getElementById('runBtn');
-    saveAllFields();
     btn.disabled = true;
     btn.textContent = '⏳ 执行中...';
 
@@ -104,7 +105,7 @@ function runReport() {
     .finally(function() {
         setTimeout(function() {
             btn.disabled = false;
-            btn.textContent = '▶ 开始填写日报';
+            btn.textContent = '🚀 一键填写日报';
         }, 30000);
     });
 }
