@@ -1,175 +1,218 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="page-header">
-    <h2>📝 工作台</h2>
-    <div class="header-actions">
-        <label class="toggle-label">
-            <input type="checkbox" id="autoSubmit" {% if auto_submit %}checked{% endif %} onchange="toggleAutoSubmit()">
-            <span class="toggle-switch"></span>
-            自动提交
-        </label>
-    </div>
-</div>
-
-<!-- 操作按钮行 -->
-<div class="card" style="margin-bottom:16px">
-    <div class="card-body" style="display:flex;gap:12px;align-items:center">
-        <button class="btn btn-warning btn-lg" onclick="generateAI()" id="aiBtn" style="flex:1">✨ AI 智能生成</button>
-        <button class="btn btn-success btn-lg" onclick="runReport()" id="runBtn" style="flex:1">🚀 一键填写日报</button>
-    </div>
-</div>
-
-<!-- 第一项 + 职位描述 并排 -->
-<div class="input-row">
-    <div class="card input-card">
-        <div class="card-body">
-            <div class="input-card-header">
-                <span class="num-badge">1</span>
-                <span class="input-card-title">{{ field_labels[0] }}</span>
-                <span class="saved-hint" id="field1Saved" style="display:none">● 已保存</span>
+<div class="page-scroll">
+    <!-- 操作卡片 -->
+    <div class="card">
+        <div class="card-inner">
+            <div class="card-header-row">
+                <h2 class="card-title">日报自动填写</h2>
+                <label class="switch-wrap">
+                    <input type="checkbox" id="autoSubmitSwitch" {% if auto_submit %}checked{% endif %} onchange="toggleAutoSubmit(this.checked)">
+                    <span class="switch-label">自动提交</span>
+                </label>
             </div>
-            <p class="input-card-desc">这是你的每日努力基准，填写后自动记住，下次无需重复输入</p>
-            <input type="text" id="field1Input" class="field1-input"
-                   value="{{ fields.get(field_labels[0], '') }}"
-                   placeholder="请输入今天的努力内容..."
-                   oninput="onField1Change()">
+            <p class="card-desc">AI 生成内容后一键填写，即可自动完成日报</p>
+            <div class="btn-row">
+                <button class="btn btn-warning btn-lg flex-1" id="aiBtn" onclick="doAiGenerate()">✨ AI 智能生成</button>
+                <button class="btn btn-brand btn-lg flex-1" id="triggerBtn" onclick="doTrigger()">🚀 一键填写日报</button>
+            </div>
         </div>
     </div>
-    <div class="card input-card">
-        <div class="card-body">
-            <div class="input-card-header">
-                <span class="input-card-title">职位描述</span>
-                <span class="saved-hint" id="roleSaved" style="display:none">● 已保存</span>
+
+    <!-- 字段1 + 职位描述 并排 -->
+    <div class="two-col">
+        <div class="card flex-1">
+            <div class="card-inner">
+                <div class="card-header-row">
+                    <div class="field-num">1</div>
+                    <h3 class="field-title flex-1">{{ field_labels[0] }}</h3>
+                    <span class="saved-hint" id="field1Saved" style="display:none">● 已保存</span>
+                </div>
+                <p class="field-desc">这是你的每日努力基准，填写后自动记住，下次无需重复输入</p>
+                <input type="text" class="form-input" id="field1Input"
+                       value="{{ fields[field_labels[0]] }}"
+                       oninput="debounceSaveField1()">
             </div>
-            <p class="input-card-desc">AI 会根据你的职位描述生成日报内容，填写后自动记住</p>
-            <textarea id="roleInput" class="role-input" rows="3"
-                      placeholder="请输入你的职位&#10;例：我是一名软件工程师，负责后端开发和系统架构设计"
-                      oninput="onRoleChange()">{{ ai_settings.prompt_template }}</textarea>
+        </div>
+        <div class="card flex-1">
+            <div class="card-inner">
+                <div class="card-header-row">
+                    <h3 class="field-title">职位描述</h3>
+                    <span class="saved-hint" id="roleSaved" style="display:none">● 已保存</span>
+                </div>
+                <p class="field-desc">AI 会根据你的职位描述生成日报内容，填写后自动记住</p>
+                <textarea class="form-textarea" id="roleInput" rows="3"
+                          placeholder="请输入你的职位&#10;例：我是一名软件工程师，负责后端开发和系统架构设计"
+                          oninput="debounceSaveRole()">{{ ai_settings.get('prompt_template', '') }}</textarea>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 日报内容预览 -->
-<div class="card" style="margin-bottom:16px">
-    <div class="card-header">
-        <h3>日报内容预览</h3>
-        <button class="btn btn-outline btn-sm" onclick="location.href='/config'">编辑配置</button>
-    </div>
-    <div class="card-body">
-        <div id="previewContainer">
-            {% for label in field_labels[1:] %}
-            <div class="preview-row">
-                <span class="num-badge-sm">{{ loop.index + 1 }}</span>
-                <span class="preview-label">{{ label[:12] }}{% if label|length > 12 %}…{% endif %}</span>
-                <span class="preview-content" id="preview-{{ loop.index }}">
+    <!-- 日报内容预览 -->
+    <div class="card">
+        <div class="card-inner">
+            <div class="card-header-row">
+                <h2 class="card-title">日报内容预览</h2>
+                <a href="/config" class="btn btn-outline-sm">编辑配置</a>
+            </div>
+            <div class="card-divider"></div>
+            <div id="previewContainer">
+                {% for label in field_labels[1:] %}
+                <div class="preview-row">
+                    <div class="field-num-sm">{{ loop.index + 1 }}</div>
+                    <span class="preview-label">{{ label[:12] }}{% if label|length > 12 %}…{% endif %}</span>
                     {% set content = fields.get(label, '') %}
-                    {% if content %}{{ content[:40] }}{% if content|length > 40 %}…{% endif %}{% else %}<span class="preview-empty">未填写</span>{% endif %}
-                </span>
+                    {% if content and content.strip() %}
+                    <span class="preview-content">{{ content.strip()[:40] }}{% if content.strip()|length > 40 %}…{% endif %}</span>
+                    {% else %}
+                    <span class="preview-empty">未填写</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% set ns = namespace(has_content=false) %}
+                {% for label in field_labels[1:] %}
+                {% if fields.get(label, '').strip() %}{% set ns.has_content = true %}{% endif %}
+                {% endfor %}
+                <div class="empty-hint" id="emptyHint"
+                     style="{% if ns.has_content %}display:none{% endif %}">
+                    暂无内容，点击「AI 智能生成」自动填写
+                </div>
             </div>
-            {% endfor %}
         </div>
-        <p class="hint" id="emptyHint" style="text-align:center;margin-top:8px">暂无内容，点击「AI 智能生成」自动填写</p>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const fieldLabels = {{ field_labels | tojson }};
-    const field1Label = fieldLabels[0];
-
-    // ===== 初始化已保存提示 =====
-    (function() {
-        var f1 = document.getElementById('field1Input');
-        if (f1.value && f1.value.trim()) document.getElementById('field1Saved').style.display = '';
-        var role = document.getElementById('roleInput');
-        if (role.value && role.value.trim()) document.getElementById('roleSaved').style.display = '';
-        // 隐藏空提示
-        checkPreviewEmpty();
-    })();
-
-    // ===== Field1 自动保存 =====
-    var field1Timer = null;
-    function onField1Change() {
-        var val = document.getElementById('field1Input').value.trim();
-        if (val) {
-            document.getElementById('field1Saved').style.display = '';
-        } else {
-            document.getElementById('field1Saved').style.display = 'none';
-        }
-        // 防抖保存
+    // 字段1 自动保存
+    let field1Timer = null;
+    function debounceSaveField1() {
         clearTimeout(field1Timer);
-        field1Timer = setTimeout(function() {
-            var fields = {};
-            fields[field1Label] = val;
-            fetch('/api/save_fields', {
+        field1Timer = setTimeout(() => {
+            const val = document.getElementById('field1Input').value;
+            fetch('/api/config/field1', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({fields: fields})
+                body: JSON.stringify({content: val})
+            }).then(r => r.json()).then(d => {
+                if (d.ok && val.trim()) {
+                    document.getElementById('field1Saved').style.display = '';
+                } else {
+                    document.getElementById('field1Saved').style.display = 'none';
+                }
             });
-        }, 500);
+        }, 600);
     }
 
-    // ===== 职位描述自动保存 =====
-    var roleTimer = null;
-    function onRoleChange() {
-        var val = document.getElementById('roleInput').value.trim();
-        if (val) {
-            document.getElementById('roleSaved').style.display = '';
-        } else {
-            document.getElementById('roleSaved').style.display = 'none';
-        }
+    // 职位描述自动保存
+    let roleTimer = null;
+    function debounceSaveRole() {
         clearTimeout(roleTimer);
-        roleTimer = setTimeout(function() {
-            fetch('/api/save_config', {
+        roleTimer = setTimeout(() => {
+            const val = document.getElementById('roleInput').value.trim();
+            fetch('/api/config/role', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    ai: {
-                        api_key: '', api_url: '', model: '',
-                        prompt_template: val
-                    }
-                })
+                body: JSON.stringify({role: val})
+            }).then(r => r.json()).then(d => {
+                if (d.ok && val) {
+                    document.getElementById('roleSaved').style.display = '';
+                } else {
+                    document.getElementById('roleSaved').style.display = 'none';
+                }
             });
-        }, 500);
+        }, 600);
     }
 
-    // ===== 自动提交开关 =====
-    function toggleAutoSubmit() {
-        var val = document.getElementById('autoSubmit').checked;
-        fetch('/api/save_config', {
+    // 自动提交开关
+    function toggleAutoSubmit(enabled) {
+        fetch('/api/auto_submit', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({auto_submit: val})
+            body: JSON.stringify({enabled: enabled})
         });
     }
 
-    // ===== 预览刷新 =====
-    function checkPreviewEmpty() {
-        var allEmpty = true;
-        document.querySelectorAll('.preview-content').forEach(function(el) {
-            if (!el.querySelector('.preview-empty')) allEmpty = false;
-        });
-        var hint = document.getElementById('emptyHint');
-        if (hint) hint.style.display = allEmpty ? '' : 'none';
-    }
+    // 触发自动填写
+    function doTrigger() {
+        const btn = document.getElementById('triggerBtn');
+        btn.disabled = true;
+        btn.textContent = '正在执行中...';
+        btn.classList.add('btn-disabled');
 
-    function refreshPreview(fields) {
-        for (var i = 0; i < fieldLabels.length - 1; i++) {
-            var label = fieldLabels[i + 1];
-            var el = document.getElementById('preview-' + (i + 1));
-            if (!el) continue;
-            var content = fields[label] || '';
-            if (content.trim()) {
-                var short = content.trim().substring(0, 40);
-                if (content.trim().length > 40) short += '…';
-                el.textContent = short;
+        fetch('/api/trigger', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) {
+                alert(data.msg || '执行失败');
+                resetTriggerBtn();
             } else {
-                el.innerHTML = '<span class="preview-empty">未填写</span>';
+                showLoading();
             }
+        })
+        .catch(err => {
+            alert('请求失败: ' + err);
+            resetTriggerBtn();
+        });
+    }
+
+    function resetTriggerBtn() {
+        const btn = document.getElementById('triggerBtn');
+        btn.disabled = false;
+        btn.textContent = '🚀 一键填写日报';
+        btn.classList.remove('btn-disabled');
+    }
+
+    // AI 生成
+    function doAiGenerate() {
+        // 校验字段1（付出不亚于任何人的努力）是否填写
+        const field1Input = document.getElementById('field1Input');
+        if (!field1Input || !field1Input.value.trim()) {
+            alert('请先填写「付出不亚于任何人的努力」');
+            return;
         }
-        checkPreviewEmpty();
+        
+        // 校验职位描述是否填写
+        const roleInput = document.getElementById('roleInput');
+        if (!roleInput || !roleInput.value.trim()) {
+            alert('请先填写「职位描述」');
+            return;
+        }
+        
+        const btn = document.getElementById('aiBtn');
+        btn.disabled = true;
+        btn.textContent = 'AI 生成中...';
+        btn.classList.add('btn-disabled');
+
+        fetch('/api/ai_generate', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) {
+                alert(data.msg || '生成失败');
+                resetAiBtn();
+            }
+        })
+        .catch(err => {
+            alert('请求失败: ' + err);
+            resetAiBtn();
+        });
+    }
+
+    function resetAiBtn() {
+        const btn = document.getElementById('aiBtn');
+        btn.disabled = false;
+        btn.textContent = '✨ AI 智能生成';
+        btn.classList.remove('btn-disabled');
+    }
+
+    // 初始化：字段1 saved hint
+    if (document.getElementById('field1Input').value.trim()) {
+        document.getElementById('field1Saved').style.display = '';
+    }
+    if (document.getElementById('roleInput').value.trim()) {
+        document.getElementById('roleSaved').style.display = '';
     }
 </script>
 {% endblock %}

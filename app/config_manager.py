@@ -10,6 +10,7 @@ from app.constants import (
     DEFAULT_USERNAME, DEFAULT_PASSWORD,
     DEFAULT_AUTO_SUBMIT,
     DEFAULT_AI_API_KEY, DEFAULT_AI_API_URL, DEFAULT_AI_MODEL, DEFAULT_AI_ROLE,
+    CHECKLIST_API_BASE,
 )
 
 
@@ -41,6 +42,15 @@ class ConfigManager:
                 "api_url": DEFAULT_AI_API_URL,
                 "model": DEFAULT_AI_MODEL,
                 "prompt_template": DEFAULT_AI_ROLE,
+            },
+            "checklist": {
+                "api_base": CHECKLIST_API_BASE,
+                "token": "",
+                "user_id": "",
+                "real_name": "",
+                "center_name": "",
+                "area": "",
+                "area_name": "",
             },
         }
 
@@ -96,6 +106,55 @@ class ConfigManager:
         self._data["fields"] = {k: v for k, v in fields.items() if k in FIELD_LABELS}
         # 清理已废弃的 current_day
         self._data.pop("current_day", None)
+        
+        # 迁移AI配置：将非豆包配置重置为豆包默认值
+        self._migrate_ai_config()
+    
+    def _migrate_ai_config(self):
+        """迁移AI配置：将非豆包厂商的配置重置为豆包默认值
+        
+        原因：项目已统一默认使用豆包服务，旧版DeepSeek/OpenAI等厂商的
+        API Key和模型配置对豆包无效，需自动迁移避免用户困惑。
+        """
+        ai_config = self._data.get("ai", {})
+        if not ai_config:
+            return
+        
+        current_model = ai_config.get("model", "")
+        current_api_key = ai_config.get("api_key", "")
+        
+        # 豆包模型列表（包含所有历史版本）
+        doubao_models = {
+            "doubao-seed-2-0-lite-260428",
+            "doubao-seed-2-0-mini-260428",
+            "doubao-seed-2-0-pro-260215",
+            "doubao-seed-1-6-lite-250615",
+            "doubao-pro-32k",
+            "doubao-lite-32k",
+        }
+        
+        # 如果当前模型不是豆包，则重置为豆包默认配置
+        if current_model and current_model not in doubao_models:
+            from app.constants import (
+                DEFAULT_AI_API_KEY,
+                DEFAULT_AI_API_URL,
+                DEFAULT_AI_MODEL,
+                DEFAULT_AI_ROLE,
+            )
+            
+            # 保留用户的职位描述（prompt_template），因为这是用户自己填写的
+            user_role = ai_config.get("prompt_template", DEFAULT_AI_ROLE)
+            
+            # 重置为豆包默认配置
+            self._data["ai"] = {
+                "api_key": DEFAULT_AI_API_KEY,
+                "api_url": DEFAULT_AI_API_URL,
+                "model": DEFAULT_AI_MODEL,
+                "prompt_template": user_role,
+            }
+            
+            # 强制保存，确保迁移后的配置写入文件
+            self.save()
 
     def save(self):
         with open(self._path, "w", encoding="utf-8") as f:
@@ -225,4 +284,82 @@ class ConfigManager:
             imported = json.load(f)
         self._data = self._merge(self._defaults(), imported)
         self._migrate_fields()
+        self.save()
+
+    # ---- checklist settings ----
+    def get_checklist_settings(self):
+        defaults = {
+            "api_base": CHECKLIST_API_BASE,
+            "token": "",
+            "user_id": "",
+            "real_name": "",
+            "center_name": "",
+            "area": "",
+            "area_name": "",
+            "submit_interval_min": 20,
+            "submit_interval_max": 30,
+        }
+        stored = self._data.get("checklist", {})
+        defaults.update(stored)
+        return defaults
+
+    def set_checklist_settings(self, **kwargs):
+        settings = self._data.setdefault("checklist", {})
+        settings.update(kwargs)
+        self.save()
+
+    # ---- remembered owners (责任人记忆) ----
+    def get_remembered_owners(self):
+        """返回记忆中的责任人列表: [{name, user_id, center_name}, ...]"""
+        return list(self._data.get("remembered_owners", []))
+
+    def set_remembered_owners(self, owners):
+        """保存责任人记忆列表，owners: [{name, user_id, center_name}, ...]"""
+        self._data["remembered_owners"] = list(owners)
+        self.save()
+
+    def add_remembered_owner(self, name, user_id, center_name):
+        """添加或更新一条责任人记忆（按 user_id 去重）"""
+        owners = self.get_remembered_owners()
+        # 去重：按 user_id 匹配，若存在则更新，否则追加
+        for i, o in enumerate(owners):
+            if o.get("user_id") == user_id:
+                owners[i] = {"name": name, "user_id": user_id, "center_name": center_name}
+                self._data["remembered_owners"] = owners
+                self.save()
+                return
+        owners.append({"name": name, "user_id": user_id, "center_name": center_name})
+        self._data["remembered_owners"] = owners
+        self.save()
+
+    # ---- BPE 神秘工具凭据记忆 ----
+    def get_bpe_settings(self):
+        """获取 BPE 已保存的账号密码"""
+        defaults = {"username": "", "password": ""}
+        stored = self._data.get("bpe", {})
+        defaults.update(stored)
+        return defaults
+
+    def set_bpe_settings(self, username, password):
+        """保存 BPE 账号密码（执行成功后调用）"""
+        self._data["bpe"] = {"username": username, "password": password}
+        self.save()
+
+    # ---- 自动回复/评价设置 ----
+    def get_auto_reply_eval_settings(self):
+        """获取自动回复/评价配置"""
+        defaults = {
+            "auto_reply_enabled": False,
+            "auto_eval_enabled": False,
+            "auto_reply_text": "收到",
+            "auto_eval_result": "满意",
+        }
+        stored = self._data.get("auto_reply_eval", {})
+        defaults.update(stored)
+        return defaults
+
+    def set_auto_reply_eval_settings(self, **kwargs):
+        """保存自动回复/评价配置（支持部分更新）"""
+        settings = self._data.setdefault("auto_reply_eval", {})
+        settings.update(kwargs)
         self.save()

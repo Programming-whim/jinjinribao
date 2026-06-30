@@ -5,12 +5,13 @@
 
 # ---- 登录页 ----
 LOGIN_BUTTON_SELECTORS = [
+    ("css", "div.loginBtn"),          # 管小花平台：登录按钮是 div 而非 button
+    ("css", ".loginBtn"),
     ("text", "立即登录"),
     ("role", "button", "立即登录"),
     ("css", "button:has-text('立即登录')"),
     ("css", "[class*='login'] button"),
     ("css", "[class*='submit']"),
-    ("css", ".login-btn"),
     ("css", ".btn-login"),
     ("css", "button[type='submit']"),
     ("css", "input[type='submit']"),
@@ -18,13 +19,13 @@ LOGIN_BUTTON_SELECTORS = [
 
 # 用户名/手机号输入框（覆盖管小花平台 + 通用场景）
 USERNAME_INPUT_SELECTORS = [
+    ("css", "input[name='mobile']"),   # 管小花平台：name=mobile
     ("css", "input[placeholder*='手机']"),
     ("css", "input[placeholder*='账号']"),
     ("css", "input[placeholder*='用户']"),
     ("css", "input[name='username']"),
     ("css", "input[name='account']"),
     ("css", "input[name='phone']"),
-    ("css", "input[name='mobile']"),
     ("css", "input[type='tel']"),
     ("css", "input[autocomplete='username']"),
 ]

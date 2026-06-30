@@ -1,9 +1,9 @@
-; 精进日报自动填写工具 - Inno Setup 安装脚本
+; 牛马工具2 - Inno Setup 安装脚本
 
-#define MyAppName "精进日报自动填写工具"
-#define MyAppVersion "1.0.0"
+#define MyAppName "牛马工具2.0"
+#define MyAppVersion "2.4.6"
 #define MyAppPublisher "wbw"
-#define MyAppExeName "精进日报工具.exe"
+#define MyAppExeName "牛马工具2.0.exe"
 
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
@@ -14,8 +14,8 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=installer_output
-OutputBaseFilename=精进日报工具_安装包
-SetupIconFile=app_icon.ico
+OutputBaseFilename=牛马工具2.0_安装包
+SetupIconFile=logo.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>牛马工具 2.0</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- ═══════════════════════════════════ 登录视图 ═══════════════════════════════════ -->
+<section id="view-login" class="view">
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#22C55E" fill-opacity="0.12"/>
+          <path d="M15 32L22 18L30 32H15Z" fill="#22C55E" fill-opacity="0.7"/>
+          <rect x="22" y="8" width="4" height="10" rx="2" fill="#22C55E"/>
+        </svg>
+      </div>
+      <h1 class="login-title">欢迎回来</h1>
+      <p class="login-sub">此处不做账号密码校验，填错了就用不了</p>
+
+      <div class="form-group">
+        <label class="form-label">手机号</label>
+        <input type="tel" id="login-username" class="input" placeholder="请输入手机号" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <div class="input-row">
+          <input type="password" id="login-password" class="input flex-1" placeholder="请输入密码" autocomplete="current-password">
+          <button id="login-eye" class="btn-icon" onclick="togglePw()" type="button" aria-label="切换密码可见性">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button id="login-btn" class="btn btn-brand btn-lg w-full" onclick="doLogin()">登 录</button>
+
+      <div id="login-error" class="login-error hidden"></div>
+      <div id="login-loading" class="login-loading hidden">
+        <span class="spinner"></span> 正在验证...
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ 主视图 ═══════════════════════════════════ -->
+<section id="view-main" class="view">
+  <!-- 顶栏 -->
+  <header class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <svg class="topbar-logo" width="32" height="32" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="14" fill="#22C55E" fill-opacity="0.15"/>
+          <path d="M15 32L22 18L30 32H15Z" fill="#22C55E" fill-opacity="0.7"/>
+          <rect x="22" y="8" width="4" height="10" rx="2" fill="#22C55E"/>
+        </svg>
+        <div class="module-switcher" id="module-switcher">
+          <button class="seg-btn active" data-module="daily" onclick="switchModule('daily')">精进日报</button>
+          <button class="seg-btn" data-module="checklist" onclick="switchModule('checklist')">五项清单</button>
+          <button class="seg-btn" data-module="mystery" onclick="switchModule('mystery')">神秘工具</button>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user" id="topbar-user"></span>
+        <button class="btn btn-brand btn-sm" onclick="openApiConfigModal()" style="margin-right: 8px;">配置API</button>
+        <button class="btn btn-outline btn-sm" onclick="clearCache()" style="margin-right: 8px; display: none;">清除缓存</button>
+        <button class="btn btn-warn btn-sm" onclick="checkUpdate()" style="margin-right: 8px;">检查更新</button>
+        <button class="btn btn-error btn-sm" onclick="doLogout()">退出登录</button>
+      </div>
+    </div>
+    <div class="topbar-divider"></div>
+  </header>
+
+  <div class="main-body">
+    <!-- 侧栏 -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="nav" id="nav-daily">
+        <button class="nav-item active" data-page="workspace" onclick="switchPage('workspace')">
+          <span class="nav-icon">&#x1F4CB;</span>工作台
+        </button>
+        <button class="nav-item" data-page="config" onclick="switchPage('config')">
+          <span class="nav-icon">&#x2699;</span>内容配置
+        </button>
+        <button class="nav-item" data-page="schedule" onclick="switchPage('schedule')">
+          <span class="nav-icon">&#x23F0;</span>定时设置
+        </button>
+      </nav>
+      <nav class="nav hidden" id="nav-checklist">
+        <button class="nav-item" data-page="checklist" onclick="switchPage('checklist')">
+          <span class="nav-icon">&#x1F4DD;</span>写清单
+        </button>
+        <button class="nav-item" data-page="reply" onclick="switchPage('reply')">
+          <span class="nav-icon">&#x1F4AC;</span>回复/评价
+          <span class="badge hidden" id="reply-badge">0</span>
+        </button>
+      </nav>
+      <nav class="nav hidden" id="nav-mystery">
+        <button class="nav-item" data-page="mystery" onclick="switchPage('mystery')">
+          <span class="nav-icon">&#x1F52E;</span>神秘工具
+        </button>
+      </nav>
+
+      <!-- 日志区 -->
+      <div class="sidebar-log">
+        <div class="sidebar-log-header">
+          <span class="sidebar-log-title">运行日志</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn btn-mini" onclick="copyLog()">复制</button>
+            <button class="btn btn-mini" onclick="clearLog()">清除</button>
+          </div>
+        </div>
+        <div class="log-box" id="log-box"></div>
+      </div>
+
+      <!-- 底部标识 -->
+      <div class="sidebar-footer">
+        <span class="sidebar-footer-text">v<span id="version-tag">--</span></span>
+      </div>
+    </aside>
+
+    <!-- 内容区 -->
+    <main class="content" id="content">
+      <!-- 工作台 -->
+      <section class="page active" id="page-workspace">
+        <div class="page-scroll">
+          <!-- Hero 操作卡片 -->
+          <div class="card hero-card" id="hero-card">
+            <div class="card-header">
+              <h2 class="card-title">日报自动填写</h2>
+              <label class="switch-label">
+                <input type="checkbox" class="switch-input" id="auto-submit-sw" onchange="toggleAutoSubmit()">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+                <span class="switch-text">自动提交</span>
+              </label>
+            </div>
+            <p class="card-desc">AI 生成内容后一键填写，即可自动完成日报</p>
+            <div class="btn-row">
+              <button class="btn btn-warn btn-lg btn-ai-with-settings" id="btn-ai" onclick="triggerAIGenerate()">
+                <span class="btn-ai-text">&#x2728; AI 智能生成</span>
+                <span class="btn-ai-settings" onclick="event.stopPropagation(); openModelSelector()" title="选择模型">
+                  &#x2699;&#65039;
+                </span>
+              </button>
+              <button class="btn btn-brand btn-lg flex-1" id="btn-fill" onclick="triggerFill()">
+                &#x1F680; 一键填写日报
+              </button>
+            </div>
+          </div>
+
+          <!-- 字段1 + 职位描述 双卡片（并排） -->
+          <div class="workspace-row">
+            <!-- 字段1 卡片 -->
+            <div class="card workspace-half" id="field1-card">
+              <div class="card-header">
+                <span class="field-badge">1</span>
+                <h3 class="card-title-sm">付出不亚于任何人的努力</h3>
+                <span class="field-saved-hint hidden" id="field1-saved">● 已保存</span>
+              </div>
+              <p class="card-hint" style="margin:0 0 6px;">这是你的每日努力基准，填写后自动记住，下次无需重复输入</p>
+              <input type="text" class="input" id="field1-input" placeholder="请输入今天的工作内容概括">
+            </div>
+
+            <!-- 职位描述 卡片 -->
+            <div class="card workspace-half" id="role-card">
+              <div class="card-header">
+                <h3 class="card-title-sm">职位描述</h3>
+                <span class="field-saved-hint hidden" id="role-saved">● 已保存</span>
+              </div>
+              <p class="card-hint" style="margin:0 0 6px;">AI 会根据你的职位描述生成日报内容，填写后自动记住</p>
+              <textarea class="textarea" id="role-textarea" rows="3" placeholder="例：我是一名软件工程师，负责后端开发和系统架构设计"></textarea>
+            </div>
+          </div>
+
+          <!-- 预览卡片 -->
+          <div class="card preview-card" id="preview-card">
+            <div class="card-header">
+              <h3 class="card-section-title">日报内容预览</h3>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="workspaceClearFields()">一键清空</button>
+                <button class="btn btn-ghost btn-sm" onclick="switchPage('config')">编辑配置</button>
+              </div>
+            </div>
+            <div class="preview-list" id="preview-list">
+              <div class="preview-empty">暂无内容，请先在「内容配置」中填写字段1后使用 AI 生成</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 内容配置页 -->
+      <section class="page" id="page-config">
+        <div class="page-scroll">
+          <!-- 工具栏 -->
+          <div class="toolbar">
+            <h2 class="page-title">内容配置</h2>
+            <div class="toolbar-actions">
+              <button class="btn btn-ghost btn-sm" onclick="configReset()">恢复默认</button>
+              <button class="btn btn-outline btn-sm" onclick="configExport()">导出配置</button>
+              <button class="btn btn-outline btn-sm" onclick="configImport()">导入配置</button>
+            </div>
+          </div>
+          <p class="page-hint">配置会自动保存，这里配置过的，AI生成的不会覆盖</p>
+
+          <!-- 职位描述卡片 -->
+          <div class="card" id="role-card">
+            <div class="card-header">
+              <h3 class="card-title-sm">职位描述</h3>
+              <span class="card-hint">例：软件工程师、产品经理</span>
+            </div>
+            <textarea id="cfg-ai-role" class="textarea" rows="3" placeholder="请输入你的职位&#10;例：我是一名软件工程师，负责后端开发和系统架构设计"></textarea>
+          </div>
+
+          <!-- 日报字段卡片 -->
+          <div class="card" id="fields-card">
+            <h3 class="card-title-sm" style="margin-bottom:4px;">日报内容</h3>
+            <p class="card-hint" style="margin-bottom:16px;">配置会自动保存，这里配置过的，AI生成的不会覆盖</p>
+            <div class="divider"></div>
+            <div class="fields-list" id="fields-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 定时设置页 -->
+      <section class="page" id="page-schedule">
+        <div class="page-scroll">
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom:4px;">定时自动填写</h2>
+            <p class="card-desc">开启后系统将每天在指定时间自动执行日报填写</p>
+
+            <label class="switch-label" style="margin-bottom:20px;">
+              <input type="checkbox" class="switch-input" id="sched-switch" onchange="schedSave()">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+              <span class="switch-text">启用定时自动填写</span>
+            </label>
+
+            <div class="divider"></div>
+
+            <label class="form-label" style="margin-top:16px;margin-bottom:10px;">每日执行时间</label>
+            <div class="time-picker">
+              <select id="sched-hour" class="select" onchange="schedSave()"></select>
+              <span class="time-sep">:</span>
+              <select id="sched-min" class="select" onchange="schedSave()"></select>
+              <span class="time-hint">24 小时制</span>
+            </div>
+
+            <button class="btn btn-brand btn-md" onclick="schedSave()" style="margin:16px 0;">保存定时设置</button>
+
+            <div class="divider"></div>
+
+            <div id="sched-status" class="status-line"></div>
+            <div id="sched-last-run" class="status-line"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 写清单页 -->
+      <section class="page" id="page-checklist">
+        <div class="page-scroll">
+          <!-- 基本信息卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">基本信息</h3>
+              <span id="cl-month-count" class="badge-count"></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">登录状态：</span>
+              <span id="cl-status" class="info-value">未登录</span>
+              <button class="btn btn-brand btn-sm" id="cl-login-btn" onclick="clAutoLogin()">登录/刷新</button>
+            </div>
+            <div class="info-row">
+              <span class="info-label">提报人：</span><span id="cl-realname" class="info-value">--</span>
+              <span class="info-label" style="margin-left:20px;">所属中心：</span><span id="cl-center" class="info-value">--</span>
+            </div>
+          </div>
+
+          <!-- 公共字段卡片 -->
+          <div class="card">
+            <h3 class="card-title-sm" style="margin-bottom:10px;">公共字段</h3>
+            <!-- 期望完成时间：隐藏 -->
+            <input type="hidden" id="cl-finish-time">
+            <div class="form-row" style="margin-bottom:8px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">紧急程度：</label>
+              <select id="cl-urgency" class="select"><option>加载中...</option></select>
+              <label class="form-label" style="width:70px;flex-shrink:0;margin-left:16px;">提交间隔：</label>
+              <input type="number" id="cl-interval-min" class="input" style="width:70px;height:36px;" value="20" min="5" step="5" onchange="clSaveInterval()">
+              <span class="card-hint" style="margin:0 4px;">-</span>
+              <input type="number" id="cl-interval-max" class="input" style="width:70px;height:36px;" value="30" min="5" step="5" onchange="clSaveInterval()">
+              <span class="card-hint" style="margin-left:4px;">秒（随机提交时间间隔，避免形式主义）</span>
+            </div>
+            <div class="divider" style="margin:10px 0;"></div>
+            <div class="form-row" style="align-items:flex-start;">
+              <label class="form-label" style="width:70px;flex-shrink:0;padding-top:6px;">责任人：</label>
+              <div style="flex:1;">
+                <div id="cl-owner-rows" class="owner-rows"></div>
+                <button class="btn btn-ghost btn-sm" onclick="clAddOwnerRow()" style="margin-top:6px;">+ 添加责任人</button>
+                <span class="card-hint" style="display:block;margin-top:4px;">（回车查询，支持多个责任人，重名或搜不到时输手机号）</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI 生成卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">纯AI生成式 <span class="card-hint">（两种方法二选一）</span></h3>
+            </div>
+            <div class="form-row" style="margin-bottom:8px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">工作场景：</label>
+              <input type="text" id="cl-ai-prompt" class="input flex-1" style="height:36px;" placeholder="描述你的工作场景，如：前端开发日常工作" value="前端开发日常工作">
+            </div>
+            <div class="form-row">
+              <label class="form-label" style="width:70px;flex-shrink:0;">生成条数：</label>
+              <input type="number" id="cl-ai-count" class="input" style="width:72px;height:36px;" value="10" min="1" max="200">
+              <button class="btn btn-warn btn-sm" id="cl-ai-btn" onclick="clAIGenerate()">AI 一键生成</button>
+              <span id="cl-ai-status" class="card-hint" style="margin-left:10px;"></span>
+            </div>
+          </div>
+
+          <!-- 原型导入卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">原型导入式 <span class="card-hint">（两种方法二选一）</span></h3>
+              <span class="card-hint">AI会根据原型内容进行编写五项清单</span>
+            </div>
+            <div class="form-row" style="margin-bottom:8px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">原型链接：</label>
+              <input type="text" id="cl-proto-url" class="input flex-1" style="height:36px;" placeholder="粘贴 Axure 原型链接">
+            </div>
+            <div class="form-row">
+              <button class="btn btn-brand btn-sm" id="cl-proto-fetch" onclick="clFetchProto()">抓取内容</button>
+              <button class="btn btn-outline btn-sm" onclick="clClearProto()">清空</button>
+              <span id="cl-proto-status" class="card-hint" style="margin-left:10px;"></span>
+              <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">请根据抓取的字数酌情填写条数</span>
+              <label class="form-label" style="margin-left:8px;">生成条数：</label>
+              <input type="number" id="cl-proto-count" class="input" style="width:72px;height:36px;" value="10" min="1" max="200">
+              <button class="btn btn-warn btn-sm" id="cl-proto-ai" onclick="clProtoAIGenerate()">AI 一键生成</button>
+            </div>
+            <textarea id="cl-proto-content" class="textarea" rows="2" style="margin-top:8px;" placeholder="点击「抓取内容」获取原型页面内容，也可在此手动编辑内容"></textarea>
+          </div>
+
+          <!-- 清单列表入口卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">五项清单列表</h3>
+              <span id="cl-list-count" class="card-hint">0 条</span>
+            </div>
+            <div class="form-row">
+              <span style="flex:1;color:var(--text-muted);font-size:13px;">点击下方按钮打开清单列表弹窗进行编辑和提交</span>
+              <button class="btn btn-brand btn-sm" id="cl-open-list-btn" onclick="clOpenListPopup()">打开清单列表</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════ 清单列表弹窗 ═══════════════════════ -->
+      <div class="modal-overlay hidden" id="cl-modal">
+        <div class="modal-panel" id="cl-modal-panel">
+          <div class="modal-header">
+            <h3 class="modal-title">五项清单列表</h3>
+            <span id="cl-popup-count" class="badge-count">0 条</span>
+          </div>
+          <div class="modal-toolbar">
+            <button class="btn btn-ghost btn-sm" onclick="clPopupAddRow()">+ 添加一条</button>
+            <button class="btn btn-ghost btn-sm" onclick="clPopupClear()">清空全部</button>
+            <div style="flex:1;"></div>
+            <button class="btn btn-brand btn-sm" onclick="clPopupSubmitAndClose()">批量提交</button>
+            <button class="btn btn-outline btn-sm" onclick="clCloseListPopup()">关闭</button>
+          </div>
+          <div class="modal-body" id="cl-popup-list"></div>
+        </div>
+      </div>
+
+      <!-- 回复/评价页 -->
+      <section class="page" id="page-reply">
+        <div class="page-scroll">
+          <!-- 批量回复卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">批量回复</h3>
+              <span id="reply-count" class="badge-count">待加载</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label" style="width:70px;flex-shrink:0;">回复内容：</label>
+              <input type="text" id="reply-text" class="input" style="width:200px;height:36px;" value="收到">
+              <button class="btn btn-brand btn-md" id="reply-btn" onclick="replyBatch()">一键批量回复</button>
+              <span id="reply-status" class="card-hint" style="margin-left:10px;"></span>
+            </div>
+          </div>
+
+          <!-- 批量评价卡片 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">批量评价</h3>
+              <span id="eval-count" class="badge-count">待加载</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label" style="width:70px;flex-shrink:0;">评价结果：</label>
+              <select id="eval-result" class="select" style="width:120px;">
+                <option>满意</option>
+                <option>不满意</option>
+              </select>
+              <button class="btn btn-brand btn-md" id="eval-btn" onclick="evalBatch()">一键批量评价</button>
+              <span id="eval-status" class="card-hint" style="margin-left:10px;"></span>
+            </div>
+          </div>
+
+          <!-- 自动处理设置 -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title-sm">自动处理设置</h3>
+              <span class="card-hint">每月最后一天 20:30 自动执行</span>
+            </div>
+            <div class="form-row" style="margin-bottom:8px;">
+              <label class="switch-label">
+                <input type="checkbox" class="switch-input" id="auto-reply-sw" onchange="autoSettingChanged()">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+                <span class="switch-text">自动回复</span>
+              </label>
+              <label class="form-label" style="margin-left:16px;">回复内容：</label>
+              <input type="text" id="auto-reply-text" class="input" style="width:120px;height:36px;" value="收到" onchange="autoSettingChanged()">
+            </div>
+            <div class="form-row" style="margin-bottom:8px;">
+              <label class="switch-label">
+                <input type="checkbox" class="switch-input" id="auto-eval-sw" onchange="autoSettingChanged()">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+                <span class="switch-text">自动评价</span>
+              </label>
+              <label class="form-label" style="margin-left:16px;">评价结果：</label>
+              <select id="auto-eval-result" class="select" style="width:100px;" onchange="autoSettingChanged()">
+                <option>满意</option>
+                <option>不满意</option>
+              </select>
+            </div>
+            <span id="auto-status" class="card-hint"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 神秘工具页 (BPE) -->
+      <section class="page" id="page-mystery">
+        <div class="page-scroll">
+
+          <!-- 功能介绍卡片 -->
+          <div class="card" style="padding:14px 18px;margin-bottom:10px;">
+            <h3 class="card-title-sm" style="margin-bottom:6px;">功能介绍</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.8;">
+              iTalent考勤系统，只可查看一个月考勤。此工具便可自定义查询任意时间的考勤记录。配合截图工具实现完美维权留证。
+            </p>
+          </div>
+
+          <!-- 登录配置卡片 -->
+          <div class="card" style="padding:14px 18px;margin-bottom:10px;">
+            <h3 class="card-title-sm" style="margin-bottom:6px;">登录配置</h3>
+            <div class="form-row" style="margin-bottom:4px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">登录账号：</label>
+              <input type="text" id="bpe-username" class="input flex-1" placeholder="输入手机号" style="height:36px;">
+            </div>
+            <div class="form-row">
+              <label class="form-label" style="width:70px;flex-shrink:0;">登录密码：</label>
+              <input type="password" id="bpe-password" class="input flex-1" placeholder="输入iTalent考勤系统密码" style="height:36px;">
+            </div>
+          </div>
+
+          <!-- 断点配置卡片 -->
+          <div class="card" style="padding:14px 18px;margin-bottom:10px;">
+            <h3 class="card-title-sm" style="margin-bottom:6px;">断点参数</h3>
+            <div class="form-row" style="margin-bottom:4px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">接口匹配：</label>
+              <input type="text" id="bpe-api-pattern" class="input flex-1" value="*api/v2/UI/TableList*" readonly style="background:var(--bg-component);cursor:default;height:36px;">
+            </div>
+            <div class="form-row" style="margin-bottom:4px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;">查询日期：</label>
+              <input type="date" id="bpe-date-start" class="input" style="width:160px;height:36px;">
+              <label class="form-label" style="width:70px;flex-shrink:0;margin-left:16px;text-align:right;">结束日期：</label>
+              <input type="date" id="bpe-date-end" class="input" style="width:160px;height:36px;">
+            </div>
+            <div class="form-row">
+              <label class="form-label" style="width:70px;flex-shrink:0;">展示条数：</label>
+              <input type="number" id="bpe-capacity" class="input" style="width:100px;height:36px;" value="400" min="1">
+              <span class="card-hint" style="margin-left:8px;">一次性展示条数（默认 400）</span>
+            </div>
+          </div>
+
+          <!-- 截图工具卡片 -->
+          <div class="card" style="padding:14px 18px;margin-bottom:10px;">
+            <h3 class="card-title-sm" style="margin-bottom:8px;">截图工具</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin:0 0 10px;line-height:1.6;">
+              推荐使用 <b>PicPick</b> 的「滚动截图」功能，可一键截取完整考勤记录长图。<br>
+              下载地址：<a href="https://wwbhd.lanzout.com/iwyJp3t24xeb" target="_blank" style="color:var(--brand-bright);">点击下载</a>
+              &nbsp;密码：<b>dnwh</b>
+            </p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:260px;">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">步骤①：打开 PicPick，选择「滚动窗口」</div>
+                <img src="img_picpick_1.png" onclick="openLightbox(this.src)" style="width:100%;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">
+              </div>
+              <div style="flex:1;min-width:260px;">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">步骤②：框选考勤表格区域，自动滚动截图</div>
+                <img src="img_picpick_2.png" onclick="openLightbox(this.src)" style="width:100%;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;">
+              </div>
+            </div>
+          </div>
+
+          <!-- 执行卡片 -->
+          <div class="card">
+            <div class="form-row">
+              <button class="btn btn-brand btn-lg flex-1" id="bpe-start-btn" onclick="bpeStart()">
+                &#x1F680; 开始执行
+              </button>
+              <span id="bpe-status" class="card-hint" style="margin-left:12px;"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 占位页面移除 -->
+    </main>
+  </div>
+</section>
+
+<!-- 全局居中进度条遮罩 -->
+<div class="progress-overlay hidden" id="progress-overlay">
+  <div class="progress-modal">
+    <div class="progress-modal-title" id="progress-title">处理中...</div>
+    <div class="progress-track progress-track-lg">
+      <div class="progress-fill" id="progress-fill-global"></div>
+    </div>
+    <div class="progress-modal-text" id="progress-text-global">0 / 0</div>
+    <div class="progress-modal-countdown hidden" id="progress-countdown">下次提交倒计时：-- 秒</div>
+    <button class="btn btn-warn btn-sm hidden" id="progress-cancel-btn" onclick="clCancelSubmit()" style="margin-top:10px;">终止提交</button>
+  </div>
+</div>
+
+<!-- API 配置弹窗 -->
+<div class="modal-overlay hidden" id="api-config-modal">
+  <div class="modal-panel" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title">配置 AI API</h3>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">AI 服务</label>
+        <select id="api-model-select" class="select" style="width: 100%;">
+          <option value="doubao">豆包</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="openai">OpenAI</option>
+          <option value="qwen">通义千问</option>
+          <option value="glm">智谱</option>
+          <option value="moonshot">月之暗面</option>
+          <option value="custom">自定义</option>
+        </select>
+      </div>
+      <div class="form-group" id="model-version-group">
+        <label class="form-label">模型版本</label>
+        <select id="api-model-version-select" class="select" style="width: 100%;">
+          <!-- 动态填充 -->
+        </select>
+      </div>
+      <div class="form-group hidden" id="custom-model-group">
+        <label class="form-label">自定义模型名称</label>
+        <input type="text" id="api-custom-model" class="input" placeholder="输入自定义模型名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="text" id="api-key-input" class="input" placeholder="sk-xxxx...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API URL</label>
+        <input type="text" id="api-url-input" class="input" placeholder="选择模型后自动填充">
+      </div>
+      <div style="background: var(--bg-component); padding: 10px; border-radius: 6px; font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+        💡 提示：暂时给家人们提供豆包的三个api使用。
+      </div>
+    </div>
+    <div class="modal-toolbar" style="justify-content: flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="closeApiConfigModal()">取消</button>
+      <button class="btn btn-brand btn-sm" onclick="saveApiConfig()">保存配置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模型版本选择弹窗（轻量级） -->
+<div class="modal-overlay hidden" id="model-selector-modal">
+  <div class="modal-panel" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3 class="modal-title">选择模型版本</h3>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">当前AI服务：<span id="current-provider-name" style="color: var(--brand); font-weight: 600;">豆包</span></label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">模型版本</label>
+        <select id="quick-model-select" class="select" style="width: 100%;">
+          <!-- 动态填充 -->
+        </select>
+      </div>
+      <div style="background: var(--warn-dim); padding: 10px; border-radius: 6px; font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+        💡 切换模型后立即生效，无需重新配置 API Key
+      </div>
+    </div>
+    <div class="modal-toolbar" style="justify-content: flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="closeModelSelector()">取消</button>
+      <button class="btn btn-brand btn-sm" onclick="saveQuickModel()">确认切换</button>
+    </div>
+  </div>
+</div>
+
+<!-- 更新弹窗 -->
+<div class="modal-overlay hidden" id="update-modal">
+  <div class="modal-panel" id="update-modal-panel">
+    <div class="modal-header">
+      <h3 class="modal-title">发现新版本</h3>
+    </div>
+    <div class="modal-body">
+      <pre id="update-changelog" style="white-space: pre-wrap; font-size: 14px; line-height: 1.5; color: var(--text-primary); background: var(--bg-component); padding: 12px; border-radius: 6px; max-height: 300px; overflow-y: auto;"></pre>
+      <div id="update-progress-container" class="hidden" style="margin-top: 16px;">
+        <div class="progress-track progress-track-lg">
+          <div class="progress-fill" id="update-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div style="text-align: center; margin-top: 8px; font-size: 13px; color: var(--text-secondary);" id="update-progress-text">0%</div>
+      </div>
+    </div>
+    <div class="modal-toolbar" style="justify-content: flex-end;">
+      <button class="btn btn-outline btn-sm" id="update-cancel-btn" onclick="closeUpdateModal()">暂不更新</button>
+      <button class="btn btn-brand btn-sm" id="update-confirm-btn" onclick="startUpdate()">更新</button>
+      <button class="btn btn-brand btn-sm hidden" id="update-finish-btn" onclick="finishUpdate()">更新完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox-overlay hidden" id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
